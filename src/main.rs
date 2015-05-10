@@ -1,25 +1,22 @@
 extern crate libc;
 
 use libc::{c_int, c_char};
-use wiredtiger::{WT_CONNECTION,WT_SESSION,WT_CURSOR,
+use wiredtiger_def::{WT_CONNECTION,WT_SESSION,WT_CURSOR,
   wiredtiger_open,wiredtiger_strerror};
 use std::ffi::{CString,CStr};
 use std::ptr;
 use std::mem;
 use std::{i32,str};
 
+mod wiredtiger_def;
 mod wiredtiger;
-
-#[link(name = "wiredtiger")]
-extern{
-}
 
 unsafe fn string_from_ptr(ptr: *mut c_char) -> String {
   let slice = CStr::from_ptr(ptr);
   str::from_utf8(slice.to_bytes()).unwrap().to_string()
 }
 
-pub fn get_error(code: i32) -> String {
+fn get_error(code: i32) -> String {
   let slice = unsafe {
     CStr::from_ptr(wiredtiger_strerror(code))
   };
