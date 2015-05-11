@@ -1,12 +1,3 @@
-extern crate libc;
-
-use libc::{c_int, c_char};
-use std::ffi::{CString,CStr};
-use std::ptr;
-use std::mem;
-use std::{i32,str};
-use wiredtiger::{KeyValuePair};
-
 mod wiredtiger_def;
 mod wiredtiger;
 

@@ -1,7 +1,9 @@
+extern crate libc;
+
 use wiredtiger_def::{WT_CONNECTION,WT_SESSION,WT_CURSOR,
   wiredtiger_open,wiredtiger_strerror};
 
-use libc::{c_int, c_char};
+use self::libc::{c_int, c_char};
 use std::ffi::{CStr,CString};
 use std::{ptr,mem,str};
 use std::ops::{Drop};
