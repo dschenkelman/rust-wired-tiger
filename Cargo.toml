@@ -1,7 +1,15 @@
 [package]
-name = "rust-tiger"
+name = "rust-wired-tiger"
 version = "0.1.0"
 authors = ["dschenkelman <damian.schenkelman@gmail.com>"]
 
 [dependencies]
 libc = "0.1"
+
+[lib]
+name = "wiredtiger"
+path = "src/lib.rs"
+
+[[bin]]
+name = "wiredtiger_sample"
+path = "src/main.rs"
