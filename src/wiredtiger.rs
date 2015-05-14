@@ -21,6 +21,20 @@ fn c_str(val: &str) -> CString{
   CString::new(val).unwrap()
 }
 
+/// Opens a Wired Tiger connection and returns a new `Connection`.
+/// # Examples
+/// ```
+/// match wiredtiger::open() {
+///   Ok(mut connection) => {
+///     // work with connection
+///   }
+///   Err(message) => {
+///     // handle error
+///   }
+/// }
+/// ```
+/// # Failures
+/// The function returns `Err(message)` if the connection failed to open.
 pub fn open() -> Result<Connection, String> {
   let action = c_str("create");
   unsafe {
@@ -41,24 +55,30 @@ pub fn open() -> Result<Connection, String> {
   }
 }
 
+/// Represents a Wired Tiger connection.
 pub struct Connection {
   wt_con: *mut WT_CONNECTION
 }
 
+/// Represents a Wired Tiger session.
 pub struct Session {
   wt_session: *mut WT_SESSION
 }
 
+/// Represents a Wired Tiger cursor.
 pub struct Cursor {
   wt_cursor: *mut WT_CURSOR
 }
 
+/// A key value pair that can be used for Wired Tiger tables with that structure
 pub struct KeyValuePair {
   pub key: String,
   pub value: String
 }
 
 impl Drop for Connection {
+  /// When the connection is dropped the underlying connection is closed.
+  /// All other components related to the connection are no longer usable.
   fn drop(&mut self) {
     unsafe{
       match (*self.wt_con).close {
@@ -70,6 +90,20 @@ impl Drop for Connection {
 }
 
 impl Connection {
+  /// Opens a Wired Tiger session and returns a `Session`.
+  /// # Examples
+  /// ```
+  /// match wiredtiger::open().unwrap().open_session() {
+  ///   Ok(session) => {
+  ///     // work with session
+  ///   },
+  ///   Err(message) => {
+  ///     // handle error
+  ///   }
+  /// }
+  /// ```
+  /// # Failures
+  /// The function returns `Err(message)` if the session failed to open.
   pub fn open_session(&mut self) -> Result<Session, String>{
     unsafe{
       match (*self.wt_con).open_session {
@@ -134,6 +168,16 @@ impl Cursor {
     }
   }
 
+  /// Inserts the `value` for the given `key` in the table related to the `Cursor`.
+  /// # Examples
+  /// ```
+  /// cursor.insert_pair("1", "John Doe");
+  /// ```
+  /// # Failures
+  /// The function returns `Err(message)` if:
+  /// * The `key` fails to be set for the cursor
+  /// * The `value` fails to be set for the cursor
+  /// * The pair fail to be inserted
   pub fn insert_pair(&mut self, key: &str, value: &str) -> Result<(), String>{
     let k = c_str(key);
     let v = c_str(value);
@@ -143,6 +187,13 @@ impl Cursor {
     Ok(())
   }
 
+  /// Places the cursor at its initial position
+  /// # Examples
+  /// ```
+  /// cursor.reset();
+  /// ```
+  /// # Failures
+  /// The function returns `Err(message)` if the cursor could not be reset
   pub fn reset(&mut self) -> Result<(), String>{
     unsafe {
       match(*self.wt_cursor).reset {
@@ -160,7 +211,7 @@ impl Cursor {
     }
   }
 
-  pub fn next(&mut self) -> Result<(), String>{
+  fn next(&mut self) -> Result<(), String>{
     unsafe {
       match(*self.wt_cursor).next {
         Some(next) => {
@@ -177,7 +228,7 @@ impl Cursor {
     }
   }
 
-  pub fn get_key(&mut self) -> Result<String, String>{
+  fn get_key(&mut self) -> Result<String, String>{
     unsafe {
       match(*self.wt_cursor).get_key {
         Some(get_key) => {
@@ -195,7 +246,7 @@ impl Cursor {
     }
   }
 
-  pub fn get_value(&mut self) -> Result<String, String>{
+  fn get_value(&mut self) -> Result<String, String>{
     unsafe {
       match(*self.wt_cursor).get_value {
         Some(get_value) => {
@@ -215,6 +266,13 @@ impl Cursor {
 }
 
 impl Session {
+  /// Creates a table named `name` to hold key/value pairs.
+  /// # Examples
+  /// ```
+  /// session.create_table("users");
+  /// ```
+  /// # Failures
+  /// The function returns `Err(message)` if the table failed to be created.
   pub fn create_table(&mut self, name: &str) -> Result<(), String> {
     unsafe {
       match(*self.wt_session).create {
@@ -235,6 +293,13 @@ impl Session {
     }
   }
 
+  /// Opens a `Cursor` for the table `table_name` and returns it.
+  /// # Examples
+  /// ```
+  /// session.open_cursor("users");
+  /// ```
+  /// # Failures
+  /// The function returns `Err(message)` if the cursor could not be opened.
   pub fn open_cursor(&mut self, table_name: &str) -> Result<Cursor, String>{
     unsafe {
       match(*self.wt_session).open_cursor {
@@ -275,6 +340,32 @@ impl Iterator for Cursor {
         }
       }
       Err(_) => None
+    }
+  }
+}
+
+impl Drop for Cursor {
+  /// When the connection is dropped the underlying connection is closed.
+  /// All other components related to the connection are no longer usable.
+  fn drop(&mut self) {
+    unsafe{
+      match (*self.wt_cursor).close {
+        Some(close) => { close(self.wt_cursor); }
+        None => ()
+      };
+    }
+  }
+}
+
+impl Drop for Session {
+  /// When the connection is dropped the underlying connection is closed.
+  /// All other components related to the connection are no longer usable.
+  fn drop(&mut self) {
+    unsafe{
+      match (*self.wt_session).close {
+        Some(close) => { close(self.wt_session, ptr::null_mut()); }
+        None => ()
+      };
     }
   }
 }
